@@ -16,7 +16,8 @@ import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
+
 
 public class OneSignalLocation extends FlutterRegistrarResponder implements MethodCallHandler {
 
