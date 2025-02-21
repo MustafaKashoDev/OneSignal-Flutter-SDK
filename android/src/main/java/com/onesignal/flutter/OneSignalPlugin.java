@@ -24,24 +24,22 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
-import io.flutter.plugin.common.PluginRegistry;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
-import io.flutter.view.FlutterNativeView;
 
-/** OnesignalPlugin */
+/** OneSignalPlugin */
 public class OneSignalPlugin extends FlutterRegistrarResponder implements FlutterPlugin, MethodCallHandler, ActivityAware {
 
-  public OneSignalPlugin() {
-  }
+  private Context context;
+  private BinaryMessenger messenger;
+  private MethodChannel channel;
 
-  private void init(Context context, BinaryMessenger messenger)
-  { 
+  public OneSignalPlugin() {}
+
+  private void init(Context context, BinaryMessenger messenger) {
     this.context = context;
     this.messenger = messenger;
-    OneSignalWrapper.setSdkType("flutter");  
-    // For 5.0.0, hard code to reflect SDK version
-    OneSignalWrapper.setSdkVersion("050209");
-    
+    OneSignalWrapper.setSdkType("flutter");
+    OneSignalWrapper.setSdkVersion("050209"); // Hardcoded SDK version for compatibility
+
     channel = new MethodChannel(messenger, "OneSignal");
     channel.setMethodCallHandler(this);
 
@@ -55,19 +53,16 @@ public class OneSignalPlugin extends FlutterRegistrarResponder implements Flutte
   }
 
   @Override
-  public void onAttachedToEngine(@NonNull FlutterPlugin.FlutterPluginBinding flutterPluginBinding) {
-    init(
-        flutterPluginBinding.getApplicationContext(),
-        flutterPluginBinding.getBinaryMessenger()
-    );
+  public void onAttachedToEngine(@NonNull FlutterPlugin.FlutterPluginBinding binding) {
+    init(binding.getApplicationContext(), binding.getBinaryMessenger());
   }
 
   @Override
   public void onDetachedFromEngine(@NonNull FlutterPlugin.FlutterPluginBinding binding) {
-    onDetachedFromEngine();
-  }
-
-  private void onDetachedFromEngine() {
+    if (channel != null) {
+      channel.setMethodCallHandler(null);
+      channel = null;
+    }
   }
 
   @Override
@@ -76,83 +71,71 @@ public class OneSignalPlugin extends FlutterRegistrarResponder implements Flutte
   }
 
   @Override
-  public void onDetachedFromActivity() {
-  }
+  public void onDetachedFromActivity() {}
 
   @Override
-  public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
-  }
+  public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {}
 
   @Override
-  public void onDetachedFromActivityForConfigChanges() {
-  }
-
-  // This static method is only to remain compatible with apps that don’t use the v2 Android embedding.
-  @Deprecated()
-  @SuppressLint("Registrar")
-  public static void registerWith(Registrar registrar) {
-    final OneSignalPlugin plugin = new OneSignalPlugin();
-    plugin.init(registrar.activeContext(), registrar.messenger());
-
-    // Create a callback for the flutterRegistrar to connect the applications onDestroy
-    registrar.addViewDestroyListener(new PluginRegistry.ViewDestroyListener() {
-      @Override
-      public boolean onViewDestroy(FlutterNativeView flutterNativeView) {
-        // Remove all handlers so they aren't triggered with wrong context
-        plugin.onDetachedFromEngine();
-        return false;
-      }
-    });
-  }
+  public void onDetachedFromActivityForConfigChanges() {}
 
   @Override
   public void onMethodCall(MethodCall call, Result result) {
-    if (call.method.contentEquals("OneSignal#initialize"))
-      this.initWithContext(call, result);
-    else if (call.method.contentEquals("OneSignal#consentRequired"))
-      this.setConsentRequired(call, result);
-    else if (call.method.contentEquals("OneSignal#consentGiven"))
-      this.setConsentGiven(call, result);
-    else if (call.method.contentEquals("OneSignal#login"))
-      this.login(call, result);
-      else if (call.method.contentEquals("OneSignal#loginWithJWT"))
-      this.loginWithJWT(call, result);
-    else if (call.method.contentEquals("OneSignal#logout"))
-      this.logout(call, result);
-    else
-      replyNotImplemented(result);
+    switch (call.method) {
+      case "OneSignal#initialize":
+        this.initWithContext(call, result);
+        break;
+      case "OneSignal#consentRequired":
+        this.setConsentRequired(call, result);
+        break;
+      case "OneSignal#consentGiven":
+        this.setConsentGiven(call, result);
+        break;
+      case "OneSignal#login":
+        this.login(call, result);
+        break;
+      case "OneSignal#loginWithJWT":
+        this.loginWithJWT(call, result);
+        break;
+      case "OneSignal#logout":
+        this.logout(call, result);
+        break;
+      default:
+        result.notImplemented();
+        break;
+    }
   }
 
   private void initWithContext(MethodCall call, Result reply) {
     String appId = call.argument("appId");
     OneSignal.initWithContext(context, appId);
-    replySuccess(reply, null);
+    reply.success(null);
   }
 
   private void setConsentRequired(MethodCall call, Result reply) {
     boolean required = call.argument("required");
     OneSignal.setConsentRequired(required);
-    replySuccess(reply, null);
+    reply.success(null);
   }
 
   private void setConsentGiven(MethodCall call, Result reply) {
     boolean granted = call.argument("granted");
     OneSignal.setConsentGiven(granted);
-    replySuccess(reply, null);
+    reply.success(null);
   }
 
   private void login(MethodCall call, Result result) {
-    OneSignal.login((String) call.argument("externalId"));
-    replySuccess(result, null);
+    OneSignal.login(call.argument("externalId"));
+    result.success(null);
   }
 
   private void loginWithJWT(MethodCall call, Result result) {
-    OneSignal.login((String) call.argument("externalId"), (String) call.argument("jwt"));
-    replySuccess(result, null);
+    OneSignal.login(call.argument("externalId"), call.argument("jwt"));
+    result.success(null);
   }
-  
+
   private void logout(MethodCall call, Result result) {
     OneSignal.logout();
-    replySuccess(result, null);
+    result.success(null);
   }
 }
