@@ -34,7 +34,8 @@ import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
+
 
 public class OneSignalNotifications extends FlutterRegistrarResponder implements MethodCallHandler, INotificationClickListener, INotificationLifecycleListener, IPermissionObserver {
     private final HashMap<String, INotificationWillDisplayEvent> notificationOnWillDisplayEventCache = new HashMap<>();
